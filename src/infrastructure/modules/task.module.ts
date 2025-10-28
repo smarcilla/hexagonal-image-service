@@ -1,0 +1,57 @@
+import { Module } from '@nestjs/common';
+import { TaskController } from '../controllers/task.controller';
+import { CreateImageProcessingTask } from '../../application/use-cases/create-image-processing-task.use-case';
+import { GetImageProcessingTask } from '../../application/use-cases/get-image-processing-task.use-case';
+import { InMemoryTaskRepository } from '../repositories/in-memory-task.repository';
+import { InMemoryEventBus } from '../events/in-memory-event-bus';
+import { ImageProcessedHandler } from '../../application/services/image-processed.handler';
+import { TaskCreatedSubscriber } from '../services/task-created.subscriber';
+import { TaskRepository } from 'src/application/ports/task.repository';
+import { IdGenerator } from 'src/application/ports/id.generator';
+import { EventBus } from 'src/application/ports/event.bus';
+
+@Module({
+  controllers: [TaskController],
+  providers: [
+    // TODO: Temporary module wiring for local testing: in-memory repository and event bus.
+    // Replace providers below with production adapters in `src/infrastructure/` and
+    // wire real EventBus and persistent repositories before deploying.
+    // infrastructure adapters
+    { provide: 'TaskRepository', useClass: InMemoryTaskRepository },
+    { provide: 'EventBus', useClass: InMemoryEventBus },
+    // application services / use-cases
+    {
+      provide: CreateImageProcessingTask,
+      useFactory: (
+        repo: TaskRepository,
+        idGen: IdGenerator,
+        eventBus: EventBus,
+      ) => new CreateImageProcessingTask(repo, idGen, eventBus),
+      inject: ['TaskRepository', 'IdGenerator', 'EventBus'],
+    },
+    {
+      provide: 'IdGenerator',
+      useValue: { generate: () => Math.random().toString(36).slice(2, 9) },
+    },
+    // handlers/subscribers
+    {
+      provide: ImageProcessedHandler,
+      useFactory: (repo: unknown) =>
+        new ImageProcessedHandler(repo as TaskRepository),
+      inject: ['TaskRepository'],
+    },
+    // subscriber needs event bus instance; create after EventBus is available
+    {
+      provide: TaskCreatedSubscriber,
+      useFactory: (eventBus: EventBus) => new TaskCreatedSubscriber(eventBus),
+      inject: ['EventBus'],
+    },
+    {
+      provide: GetImageProcessingTask,
+      useFactory: (repo: TaskRepository) => new GetImageProcessingTask(repo),
+      inject: ['TaskRepository'],
+    },
+  ],
+  exports: [],
+})
+export class TaskModule {}
