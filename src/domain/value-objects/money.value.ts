@@ -1,3 +1,5 @@
+import { InvalidMoneyError } from '../errors/invalid-money.error';
+
 export class Money {
   public readonly amount: number;
 
@@ -12,7 +14,7 @@ export class Money {
 
   static from(amount: number): Money {
     if (!Number.isFinite(amount) || amount < 0) {
-      throw new Error('Invalid money amount');
+      throw new InvalidMoneyError('Invalid money amount');
     }
     return new Money(amount);
   }

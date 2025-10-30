@@ -9,7 +9,11 @@ export class InMemoryTaskRepository implements TaskRepository {
     return Promise.resolve();
   }
 
-  findById(id: string): Promise<ImageProcessingTask | null> {
-    return Promise.resolve(this.store.get(id) ?? null);
+  findById(id: string): Promise<ImageProcessingTask> {
+    const task = this.store.get(id);
+    if (!task) {
+      throw new Error(`Task with id ${id} not found`);
+    }
+    return Promise.resolve(task);
   }
 }

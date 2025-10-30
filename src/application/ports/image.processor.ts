@@ -1,3 +1,5 @@
+import { ImageProcessingTask } from 'src/domain/entities/image-processing-task.model';
+
 export type ProcessedVariant = {
   resolution: number;
   md5: string;
@@ -12,9 +14,5 @@ export interface ImageProcessor {
    * @param originalName original filename (used for output path)
    * @param taskId id of the processing task
    */
-  process(
-    sourceUri: string,
-    originalName: string,
-    taskId: string,
-  ): Promise<ProcessedVariant[]>;
+  process(task: ImageProcessingTask): Promise<void>;
 }

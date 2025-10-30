@@ -1,3 +1,5 @@
+import { InvalidResolutionError } from '../errors/invalid-resolution.error';
+
 export class Resolution {
   public readonly width: number;
 
@@ -9,7 +11,7 @@ export class Resolution {
 
   static from(width: number): Resolution {
     if (!this.allowed.includes(width)) {
-      throw new Error(
+      throw new InvalidResolutionError(
         `Invalid resolution: ${width}. Allowed: ${this.allowed.join(', ')}`,
       );
     }

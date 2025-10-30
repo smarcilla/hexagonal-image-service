@@ -8,15 +8,8 @@ export class GetImageProcessingTask {
     if (!task) return null;
 
     return {
-      id: task.id,
       status: task.status,
       price: { amount: task.price.amount },
-      source: task.source.uri,
-      variants: task.variants.map((v) => ({
-        resolution: v.resolution.width,
-        md5: v.md5.value,
-        ext: v.ext,
-      })),
     };
   }
 }

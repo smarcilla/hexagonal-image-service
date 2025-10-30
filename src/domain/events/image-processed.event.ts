@@ -1,11 +1,5 @@
+import { ImageVariant } from '../entities/image-variant.model';
 import { DomainEvent } from './domain-event';
-
-export type VariantMeta = {
-  resolution: number;
-  md5: string;
-  ext: string;
-  outputPath: string;
-};
 
 export class ImageProcessedEvent implements DomainEvent {
   readonly type = 'ImageProcessed';
@@ -13,7 +7,7 @@ export class ImageProcessedEvent implements DomainEvent {
 
   constructor(
     public readonly taskId: string,
-    public readonly variants: VariantMeta[],
+    public readonly variants: ImageVariant[],
   ) {
     this.occurredAt = new Date();
   }

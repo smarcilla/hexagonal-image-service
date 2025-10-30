@@ -5,7 +5,7 @@ import { GetImageProcessingTask } from '../../application/use-cases/get-image-pr
 import { InMemoryTaskRepository } from '../repositories/in-memory-task.repository';
 import { InMemoryEventBus } from '../events/in-memory-event-bus';
 import { ImageProcessedHandler } from '../../application/services/image-processed.handler';
-import { TaskCreatedSubscriber } from '../services/task-created.subscriber';
+import { SharpImageProcessor } from '../services/sharp-image.processor';
 import { TaskRepository } from 'src/application/ports/task.repository';
 import { IdGenerator } from 'src/application/ports/id.generator';
 import { EventBus } from 'src/application/ports/event.bus';
@@ -36,15 +36,15 @@ import { EventBus } from 'src/application/ports/event.bus';
     // handlers/subscribers
     {
       provide: ImageProcessedHandler,
-      useFactory: (repo: unknown) =>
-        new ImageProcessedHandler(repo as TaskRepository),
+      useFactory: (repo: TaskRepository) => new ImageProcessedHandler(repo),
       inject: ['TaskRepository'],
     },
     // subscriber needs event bus instance; create after EventBus is available
     {
-      provide: TaskCreatedSubscriber,
-      useFactory: (eventBus: EventBus) => new TaskCreatedSubscriber(eventBus),
-      inject: ['EventBus'],
+      provide: SharpImageProcessor,
+      useFactory: (eventBus: EventBus, taskRepo: TaskRepository) =>
+        new SharpImageProcessor(eventBus, taskRepo),
+      inject: ['EventBus', 'TaskRepository'],
     },
     {
       provide: GetImageProcessingTask,

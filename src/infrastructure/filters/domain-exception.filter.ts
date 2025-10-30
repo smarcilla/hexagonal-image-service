@@ -5,7 +5,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { DomainError } from '../../domain/errors/domain-error';
+import { DomainError } from '../../domain/errors/domain.error';
 import { InvalidImageSourceError } from '../../domain/errors/invalid-image-source.error';
 
 /**

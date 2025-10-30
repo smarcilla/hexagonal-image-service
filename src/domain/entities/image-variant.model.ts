@@ -1,19 +1,23 @@
 import { Resolution } from '../value-objects/resolution.value';
 import { Md5Hash } from '../value-objects/md5hash.value';
+import { ImageSource } from '../value-objects/image-source.value';
 
 export class ImageVariant {
   public readonly resolution: Resolution;
   public readonly md5: Md5Hash;
-  public readonly ext: string;
+  public readonly path: ImageSource;
 
-  constructor(resolution: Resolution, md5: Md5Hash, ext: string) {
+  constructor(resolution: Resolution, md5: Md5Hash, path: ImageSource) {
     this.resolution = resolution;
     this.md5 = md5;
-    this.ext = ext.startsWith('.') ? ext.slice(1) : ext;
+    this.path = path;
   }
 
-  getOutputPath(originalName: string): string {
-    // /output/{original_name}/{resolution}/{md5}.{ext}
-    return `/output/${originalName}/${this.resolution.width}/${this.md5.value}.${this.ext}`;
+  static create(
+    resolution: Resolution,
+    md5: Md5Hash,
+    path: ImageSource,
+  ): ImageVariant {
+    return new ImageVariant(resolution, md5, path);
   }
 }
