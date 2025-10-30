@@ -33,8 +33,8 @@ describe('Tasks (e2e)', () => {
       });
 
     const body = res.body;
-    expect(body).toHaveProperty('id');
-    expect(typeof body.id).toBe('string');
+    expect(body).toHaveProperty('taskId');
+    expect(typeof body.taskId).toBe('string');
   });
 
   it('POST /tasks - empty source returns 400 with Domain error shape', async () => {

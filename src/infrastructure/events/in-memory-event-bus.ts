@@ -1,10 +1,10 @@
 import { DomainEvent } from 'src/domain/events/domain-event';
 import { EventBus } from '../../application/ports/event.bus';
-import { Logger } from '@nestjs/common';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
 
 type Handler = (event: DomainEvent) => Promise<void>;
 
-export class InMemoryEventBus implements EventBus {
+export class InMemoryEventBus implements EventBus, OnModuleDestroy {
   public static DEFAULT_POLLING_INTERVAL_MS = 1000 * 60; // 1 minute
   private handlers: Map<string, Handler[]> = new Map();
   private queue: DomainEvent[] = [];
@@ -91,5 +91,23 @@ export class InMemoryEventBus implements EventBus {
     } finally {
       this.processing = false;
     }
+  }
+
+  /**
+   * Hook de NestJS: se ejecuta automáticamente antes de que el módulo se destruya.
+   */
+  onModuleDestroy() {
+    this.dispose();
+  }
+
+  /**
+   * Detiene el procesador periódico y libera recursos.
+   * Puede ser llamado manualmente o automáticamente por NestJS.
+   */
+  dispose(): void {
+    this.stop();
+    this.handlers.clear();
+    this.queue = [];
+    this.logger.log('InMemoryEventBus disposed');
   }
 }

@@ -6,9 +6,11 @@ import { InMemoryTaskRepository } from '../repositories/in-memory-task.repositor
 import { InMemoryEventBus } from '../events/in-memory-event-bus';
 import { ImageProcessedHandler } from '../../application/services/image-processed.handler';
 import { SharpImageProcessor } from '../services/sharp-image.processor';
+import { FileDownloaderService } from '../services/file-downloader.service';
 import { TaskRepository } from 'src/application/ports/task.repository';
 import { IdGenerator } from 'src/application/ports/id.generator';
 import { EventBus } from 'src/application/ports/event.bus';
+import { FileDownloader } from 'src/application/ports/file.downloader';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ImageProcessedListenerAdapter } from '../listeners/image-processed.listener';
 
@@ -21,6 +23,7 @@ import { ImageProcessedListenerAdapter } from '../listeners/image-processed.list
     // wire real EventBus and persistent repositories before deploying.
     // infrastructure adapters
     { provide: 'TaskRepository', useClass: InMemoryTaskRepository },
+    { provide: 'FileDownloader', useClass: FileDownloaderService },
     {
       provide: 'EventBus',
       useFactory: (config: ConfigService) => {
@@ -56,9 +59,12 @@ import { ImageProcessedListenerAdapter } from '../listeners/image-processed.list
     // subscriber needs event bus instance; create after EventBus is available
     {
       provide: SharpImageProcessor,
-      useFactory: (eventBus: EventBus, taskRepo: TaskRepository) =>
-        new SharpImageProcessor(eventBus, taskRepo),
-      inject: ['EventBus', 'TaskRepository'],
+      useFactory: (
+        eventBus: EventBus,
+        taskRepo: TaskRepository,
+        fileDownloader: FileDownloader,
+      ) => new SharpImageProcessor(eventBus, taskRepo, fileDownloader),
+      inject: ['EventBus', 'TaskRepository', 'FileDownloader'],
     },
     {
       provide: ImageProcessedListenerAdapter,

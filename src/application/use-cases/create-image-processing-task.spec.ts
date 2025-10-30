@@ -13,8 +13,8 @@ class InMemoryTaskRepository implements TaskRepository {
     return Promise.resolve();
   }
 
-  findById(id: string): Promise<ImageProcessingTask | null> {
-    return Promise.resolve(this.store.get(id) ?? null);
+  findById(id: string): Promise<ImageProcessingTask> {
+    return Promise.resolve(this.store.get(id)!);
   }
 }
 
@@ -26,6 +26,12 @@ class StaticIdGenerator implements IdGenerator {
 }
 
 class MockEventBus implements EventBus {
+  dispose(): void {
+    throw new Error('Method not implemented.');
+  }
+  subscribe(): void {
+    throw new Error('Method not implemented.');
+  }
   public published: any[] = [];
   publish(event: any): Promise<void> {
     this.published.push(event);
@@ -42,7 +48,7 @@ describe('CreateImageProcessingTask use-case', () => {
     const uc = new CreateImageProcessingTask(repo, idGen, eventBus);
 
     const res = await uc.execute({ source: 'file.jpg' });
-    expect(res.id).toBe('task-123');
+    expect(res.taskId).toBe('task-123');
 
     const saved = await repo.findById('task-123');
     expect(saved).not.toBeNull();
