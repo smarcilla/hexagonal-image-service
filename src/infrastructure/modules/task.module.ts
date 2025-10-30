@@ -9,8 +9,11 @@ import { SharpImageProcessor } from '../services/sharp-image.processor';
 import { TaskRepository } from 'src/application/ports/task.repository';
 import { IdGenerator } from 'src/application/ports/id.generator';
 import { EventBus } from 'src/application/ports/event.bus';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ImageProcessedListenerAdapter } from '../listeners/image-processed.listener';
 
 @Module({
+  imports: [ConfigModule],
   controllers: [TaskController],
   providers: [
     // TODO: Temporary module wiring for local testing: in-memory repository and event bus.
@@ -18,7 +21,18 @@ import { EventBus } from 'src/application/ports/event.bus';
     // wire real EventBus and persistent repositories before deploying.
     // infrastructure adapters
     { provide: 'TaskRepository', useClass: InMemoryTaskRepository },
-    { provide: 'EventBus', useClass: InMemoryEventBus },
+    {
+      provide: 'EventBus',
+      useFactory: (config: ConfigService) => {
+        const pollingInterval = config.get<number>(
+          'EVENT_BUS_POLLING_INTERVAL_MS',
+          InMemoryEventBus.DEFAULT_POLLING_INTERVAL_MS,
+        );
+        const autoStart = config.get<boolean>('EVENT_BUS_AUTO_START', true);
+        return new InMemoryEventBus(pollingInterval, autoStart);
+      },
+      inject: [ConfigService],
+    },
     // application services / use-cases
     {
       provide: CreateImageProcessingTask,
@@ -44,6 +58,12 @@ import { EventBus } from 'src/application/ports/event.bus';
       provide: SharpImageProcessor,
       useFactory: (eventBus: EventBus, taskRepo: TaskRepository) =>
         new SharpImageProcessor(eventBus, taskRepo),
+      inject: ['EventBus', 'TaskRepository'],
+    },
+    {
+      provide: ImageProcessedListenerAdapter,
+      useFactory: (eventBus: EventBus, taskRepo: TaskRepository) =>
+        new ImageProcessedListenerAdapter(eventBus, taskRepo),
       inject: ['EventBus', 'TaskRepository'],
     },
     {

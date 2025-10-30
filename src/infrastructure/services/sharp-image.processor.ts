@@ -26,13 +26,14 @@ export class SharpImageProcessor implements ImageProcessor {
   ) {
     // register handler: subscribe expects a handler returning Promise<void>.
 
-    this.eventBus.subscribe?.('TaskCreated', async (ev: TaskCreatedEvent) => {
+    this.eventBus.subscribe('TaskCreated', async (ev: TaskCreatedEvent) => {
       // fire-and-forget: start processing but return a settled Promise so the subscriber signature is satisfied
       this.logger.log(`Processing task created event for task ${ev.taskId}`);
       await this.onTaskCreated(ev);
     });
   }
   async process(task: ImageProcessingTask): Promise<void> {
+    //TODO: Refactor sharp processing logic
     try {
       const sourceUri = task.source.uri;
       const resolutions = [1024, 800]; //TODO: make configurable
@@ -64,7 +65,10 @@ export class SharpImageProcessor implements ImageProcessor {
         );
 
         variants.push(processedVariant);
+        task.addVariant(processedVariant);
       }
+
+      await this.taskRepo.save(task);
 
       const event = new ImageProcessedEvent(task.id, variants);
       await this.eventBus.publish(event);
