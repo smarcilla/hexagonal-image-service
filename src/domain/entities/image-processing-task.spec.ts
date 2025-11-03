@@ -15,15 +15,15 @@ describe('ImageProcessingTask (domain)', () => {
   it('completes only when there are exactly 2 variants', () => {
     const task = ImageProcessingTask.create('t2', ImageSource.from('file.jpg'));
 
-    const v1 = new ImageVariant(
-      Resolution.from(1024),
+    const v1 = ImageVariant.create(
+      Resolution.from('1024'),
       Md5Hash.from('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-      'jpg',
+      ImageSource.from('file1.jpg'),
     );
-    const v2 = new ImageVariant(
-      Resolution.from(800),
+    const v2 = ImageVariant.create(
+      Resolution.from('800'),
       Md5Hash.from('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),
-      '.png',
+      ImageSource.from('file2.png'),
     );
 
     task.addVariant(v1);
@@ -37,10 +37,10 @@ describe('ImageProcessingTask (domain)', () => {
   it('throws when trying to complete with incorrect number of variants', () => {
     const task = ImageProcessingTask.create('t3', ImageSource.from('file.jpg'));
     expect(() => task.complete()).toThrow();
-    const v = new ImageVariant(
-      Resolution.from(1024),
+    const v = ImageVariant.create(
+      Resolution.from('1024'),
       Md5Hash.from('cccccccccccccccccccccccccccccccc'),
-      'jpg',
+      ImageSource.from('file3.jpg'),
     );
     task.addVariant(v);
     expect(() => task.complete()).toThrow();

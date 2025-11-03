@@ -14,14 +14,28 @@ export class ImageProcessingTask {
   private _status: TaskStatus = 'pending';
   private _variants: ImageVariant[] = [];
 
-  private constructor(id: string, source: ImageSource, price?: Money) {
+  private constructor(
+    id: string,
+    source: ImageSource,
+    price?: Money,
+    status?: TaskStatus,
+    variants?: ImageVariant[],
+  ) {
     this.id = id;
     this.source = source;
     this.price = price ?? Money.randomBetween();
+    this._status = status ?? 'pending';
+    this._variants = variants ?? [];
   }
 
-  static create(id: string, source: ImageSource): ImageProcessingTask {
-    return new ImageProcessingTask(id, source);
+  static create(
+    id: string,
+    source: ImageSource,
+    price?: Money,
+    status?: TaskStatus,
+    variants?: ImageVariant[],
+  ): ImageProcessingTask {
+    return new ImageProcessingTask(id, source, price, status, variants);
   }
 
   get status(): TaskStatus {

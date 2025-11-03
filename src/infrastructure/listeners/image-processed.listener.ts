@@ -14,22 +14,26 @@ export class ImageProcessedListenerAdapter implements ImageProcessedListener {
     this.eventBus.subscribe(
       'ImageProcessed',
       async (event: ImageProcessedEvent) => {
-        await this.onImageProcessed(event.taskId, event.variants.length);
+        await this.onImageProcessed(event);
       },
     );
   }
 
-  async onImageProcessed(taskId: string, variantCount: number): Promise<void> {
+  async onImageProcessed(event: ImageProcessedEvent): Promise<void> {
+    const { taskId, variants } = event;
     this.logger.log(
-      `Handling ImageProcessed event for task ${taskId} with ${variantCount} variants`,
+      `Handling ImageProcessed event for task ${taskId} with ${variants.length} variants`,
     );
 
     try {
       const task = await this.taskRepo.findById(taskId);
 
-      // Add variants from event (they're already in the event)
-      // The task should have been updated by SharpImageProcessor
-      // We just need to mark it as completed
+      this.logger.log(`Loaded task ${taskId} for completion`);
+
+      for (const variant of variants) {
+        task.addVariant(variant);
+      }
+
       task.complete();
 
       await this.taskRepo.save(task);

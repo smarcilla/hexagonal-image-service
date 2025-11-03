@@ -10,7 +10,10 @@ import fs from 'fs/promises';
 import crypto from 'crypto';
 import { ImageProcessingTask } from '../../domain/entities/image-processing-task.model';
 import { ImageVariant } from '../../domain/entities/image-variant.model';
-import { Resolution } from '../../domain/value-objects/resolution.value';
+import {
+  AllowedResolutions,
+  Resolution,
+} from '../../domain/value-objects/resolution.value';
 import { Md5Hash } from '../../domain/value-objects/md5hash.value';
 import { ImageSource } from '../../domain/value-objects/image-source.value';
 import { Logger } from '@nestjs/common';
@@ -37,7 +40,7 @@ export class SharpImageProcessor implements ImageProcessor {
   async process(task: ImageProcessingTask): Promise<void> {
     try {
       const sourceUri = task.source.uri;
-      const resolutions = [1024, 800]; // TODO: make configurable
+      const resolutions: AllowedResolutions[] = ['1024', '800']; // TODO: make configurable
 
       // Extract original name and extension
       // For URLs, use the last path segment; for local paths, use the filename
@@ -53,16 +56,12 @@ export class SharpImageProcessor implements ImageProcessor {
       const variants: ImageVariant[] = [];
 
       for (const width of resolutions) {
-        const outputDir = path.join(
-          'images/output',
-          imageName,
-          width.toString(),
-        );
+        const outputDir = path.join('images/output', imageName, width);
         await fs.mkdir(outputDir, { recursive: true });
         const outputFile = path.join(outputDir, `${md5}.${ext}`);
 
         await sharp(buffer)
-          .resize({ width, withoutEnlargement: true })
+          .resize({ width: Number(width), withoutEnlargement: true })
           .toFile(outputFile);
 
         const processedVariant = ImageVariant.create(
@@ -72,10 +71,7 @@ export class SharpImageProcessor implements ImageProcessor {
         );
 
         variants.push(processedVariant);
-        task.addVariant(processedVariant);
       }
-
-      await this.taskRepo.save(task);
 
       const event = new ImageProcessedEvent(task.id, variants);
       await this.eventBus.publish(event);

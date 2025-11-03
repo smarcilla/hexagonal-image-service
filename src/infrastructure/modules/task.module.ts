@@ -2,9 +2,7 @@ import { Module } from '@nestjs/common';
 import { TaskController } from '../controllers/task.controller';
 import { CreateImageProcessingTask } from '../../application/use-cases/create-image-processing-task.use-case';
 import { GetImageProcessingTask } from '../../application/use-cases/get-image-processing-task.use-case';
-import { InMemoryTaskRepository } from '../repositories/in-memory-task.repository';
 import { InMemoryEventBus } from '../events/in-memory-event-bus';
-import { ImageProcessedHandler } from '../../application/services/image-processed.handler';
 import { SharpImageProcessor } from '../services/sharp-image.processor';
 import { FileDownloaderService } from '../services/file-downloader.service';
 import { TaskRepository } from 'src/application/ports/task.repository';
@@ -13,16 +11,21 @@ import { EventBus } from 'src/application/ports/event.bus';
 import { FileDownloader } from 'src/application/ports/file.downloader';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ImageProcessedListenerAdapter } from '../listeners/image-processed.listener';
+import { MongoTaskRepository } from '../repositories/mongo-task.repository';
+import { Connection } from 'mongoose';
+import { getConnectionToken } from '@nestjs/mongoose';
 
 @Module({
   imports: [ConfigModule],
   controllers: [TaskController],
   providers: [
-    // TODO: Temporary module wiring for local testing: in-memory repository and event bus.
-    // Replace providers below with production adapters in `src/infrastructure/` and
-    // wire real EventBus and persistent repositories before deploying.
-    // infrastructure adapters
-    { provide: 'TaskRepository', useClass: InMemoryTaskRepository },
+    {
+      provide: 'TaskRepository',
+      useFactory: (connection: Connection) => {
+        return new MongoTaskRepository(connection);
+      },
+      inject: [getConnectionToken()],
+    },
     { provide: 'FileDownloader', useClass: FileDownloaderService },
     {
       provide: 'EventBus',
@@ -49,12 +52,6 @@ import { ImageProcessedListenerAdapter } from '../listeners/image-processed.list
     {
       provide: 'IdGenerator',
       useValue: { generate: () => Math.random().toString(36).slice(2, 9) },
-    },
-    // handlers/subscribers
-    {
-      provide: ImageProcessedHandler,
-      useFactory: (repo: TaskRepository) => new ImageProcessedHandler(repo),
-      inject: ['TaskRepository'],
     },
     // subscriber needs event bus instance; create after EventBus is available
     {
