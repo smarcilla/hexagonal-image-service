@@ -1,6 +1,7 @@
-import { EventBus } from '../../application/ports/event.bus';
+import { EventBus, TaskCreatedQueue } from '../../application/ports/event.bus';
 import { TaskCreatedEvent } from '../../domain/events/task-created.event';
 import { ImageProcessedEvent } from '../../domain/events/image-processed.event';
+import { ImageProcessingFailed } from '../../domain/events/image-processing-failed.event';
 import { ImageProcessor } from '../../application/ports/image.processor';
 import { TaskRepository } from '../../application/ports/task.repository';
 import { FileDownloader } from '../../application/ports/file.downloader';
@@ -32,7 +33,7 @@ export class SharpImageProcessor implements ImageProcessor {
     private readonly fileDownloader: FileDownloader,
   ) {
     // Subscribe to TaskCreated events to trigger processing
-    this.eventBus.subscribe('TaskCreated', async (ev: TaskCreatedEvent) => {
+    this.eventBus.subscribe(TaskCreatedQueue, async (ev: TaskCreatedEvent) => {
       this.logger.log(`Processing task created event for task ${ev.taskId}`);
       await this.onTaskCreated(ev);
     });
@@ -75,12 +76,13 @@ export class SharpImageProcessor implements ImageProcessor {
 
       const event = new ImageProcessedEvent(task.id, variants);
       await this.eventBus.publish(event);
-    } catch (err) {
-      const message = `Error processing task ${task?.id ?? '<unknown>'}: ${String(
-        (err as Error)?.message ?? err,
-      )}`;
-      this.logger.error(message, (err as Error)?.stack);
-      throw err;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown processing error';
+
+      // Emitir evento de fallo
+      const failedEvent = new ImageProcessingFailed(task.id, errorMessage);
+      await this.eventBus.publish(failedEvent);
     }
   }
 

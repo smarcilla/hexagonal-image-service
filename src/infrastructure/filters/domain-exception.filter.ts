@@ -7,6 +7,7 @@ import {
 import type { Request, Response } from 'express';
 import { DomainError } from '../../domain/errors/domain.error';
 import { InvalidImageSourceError } from '../../domain/errors/invalid-image-source.error';
+import { TaskNotFoundError } from '../../domain/errors/task-not-found.error';
 
 /**
  * Catches DomainError instances and maps them to HTTP responses.
@@ -18,27 +19,28 @@ export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: DomainError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
 
-    // map known domain types to HTTP statuses
-    if (exception instanceof InvalidImageSourceError) {
-      return response.status(HttpStatus.BAD_REQUEST).json({
-        statusCode: HttpStatus.BAD_REQUEST,
-        error: exception.message,
-        type: exception.constructor.name,
-        timestamp: new Date().toISOString(),
-        path: request.url,
-      });
+    const type = exception.name;
+
+    switch (type) {
+      case InvalidImageSourceError.name:
+        return response.status(HttpStatus.BAD_REQUEST).json({
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: exception.message,
+          type: exception.constructor.name,
+        });
+      case TaskNotFoundError.name:
+        return response.status(HttpStatus.NOT_FOUND).json({
+          statusCode: HttpStatus.NOT_FOUND,
+          error: exception.message,
+          type: exception.constructor.name,
+        });
+      default:
+        return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Internal server error',
+          type: exception.constructor.name,
+        });
     }
-
-    const status = HttpStatus.UNPROCESSABLE_ENTITY;
-
-    response.status(status).json({
-      statusCode: status,
-      error: exception.message,
-      type: exception.constructor.name,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-    });
   }
 }

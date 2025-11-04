@@ -1,15 +1,17 @@
-import type { TaskRepository } from '../ports/task.repository';
+import { TaskRepository } from '../ports/task.repository';
+
+import { GetTaskOutput } from '../dtos/get-task.dto';
 
 export class GetImageProcessingTask {
-  constructor(private readonly taskRepo: TaskRepository) {}
+  constructor(private readonly taskRepository: TaskRepository) {}
 
-  async execute(id: string) {
-    const task = await this.taskRepo.findById(id);
-    if (!task) return null;
+  async execute(taskId: string): Promise<GetTaskOutput> {
+    const task = await this.taskRepository.findById(taskId);
 
     return {
       status: task.status,
-      price: { amount: task.price.amount },
+      price: task.price.amount,
+      paths: task.variants.map((variant) => variant.path.uri),
     };
   }
 }

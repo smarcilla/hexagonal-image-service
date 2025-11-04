@@ -1,5 +1,9 @@
 import { DomainEvent } from '../../domain/events/domain-event';
 
+export const TaskCreatedQueue = 'TaskCreated';
+export const ImageProcessedQueue = 'ImageProcessed';
+export const ImageProcessingFailedQueue = 'ImageProcessingFailed';
+
 export interface EventBus {
   publish(event: DomainEvent): Promise<void>;
 

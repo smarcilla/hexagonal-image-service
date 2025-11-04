@@ -15,6 +15,7 @@ import {
 } from '../../domain/value-objects/resolution.value';
 import { Md5Hash } from '../../domain/value-objects/md5hash.value';
 import { ImageVariant } from '../../domain/entities/image-variant.model';
+import { TaskNotFoundError } from '../../domain/errors/task-not-found.error';
 
 interface ImageDocument {
   _id: string;
@@ -111,30 +112,22 @@ export class MongoTaskRepository implements TaskRepository {
    * @throws Error if task is not found
    */
   async findById(id: string): Promise<ImageProcessingTask> {
-    try {
-      const taskDoc = await this.tasksCollection.findOne({ _id: id });
-
-      if (!taskDoc) {
-        throw new Error(`Task with id ${id} not found`);
-      }
-
-      // For completed tasks, fetch full image documents with MD5 hashes
-      let fullImages: ImageDocument[] = [];
-      if (taskDoc.status === 'completed' && taskDoc.images.length > 0) {
-        fullImages = await this.imagesCollection.find({ taskId: id }).toArray();
-      }
-
-      const task = this.toDomainModel(taskDoc, fullImages);
-      this.logger.debug(`Task ${id} retrieved with status: ${task.status}`);
-
-      return task;
-    } catch (error) {
-      this.logger.error(
-        `Failed to find task ${id}: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
+    const taskDoc = await this.tasksCollection.findOne({ _id: id });
+    if (!taskDoc) {
+      this.logger.warn(`Task ${id} not found in database`);
+      throw new TaskNotFoundError(id);
     }
+
+    // For completed tasks, fetch full image documents with MD5 hashes
+    let fullImages: ImageDocument[] = [];
+    if (taskDoc.images.length > 0) {
+      fullImages = await this.imagesCollection.find({ taskId: id }).toArray();
+    }
+
+    const task = this.toDomainModel(taskDoc, fullImages);
+    this.logger.debug(`Task ${id} retrieved with status: ${task.status}`);
+
+    return task;
   }
 
   /**

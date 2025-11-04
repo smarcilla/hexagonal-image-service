@@ -1,8 +1,13 @@
 import { Logger } from '@nestjs/common';
-import { EventBus } from '../../application/ports/event.bus';
+import {
+  EventBus,
+  ImageProcessedQueue,
+  ImageProcessingFailedQueue,
+} from '../../application/ports/event.bus';
 import { TaskRepository } from '../../application/ports/task.repository';
 import { ImageProcessedEvent } from '../../domain/events/image-processed.event';
 import { ImageProcessedListener } from '../../application/ports/image-processed.listener';
+import { ImageProcessingFailed } from '../../domain/events/image-processing-failed.event';
 
 export class ImageProcessedListenerAdapter implements ImageProcessedListener {
   private readonly logger = new Logger(ImageProcessedListenerAdapter.name);
@@ -12,9 +17,16 @@ export class ImageProcessedListenerAdapter implements ImageProcessedListener {
     private readonly taskRepo: TaskRepository,
   ) {
     this.eventBus.subscribe(
-      'ImageProcessed',
+      ImageProcessedQueue,
       async (event: ImageProcessedEvent) => {
         await this.onImageProcessed(event);
+      },
+    );
+
+    this.eventBus.subscribe(
+      ImageProcessingFailedQueue,
+      async (event: ImageProcessingFailed) => {
+        await this.handleImageProcessingFailed(event);
       },
     );
   }
@@ -46,5 +58,22 @@ export class ImageProcessedListenerAdapter implements ImageProcessedListener {
       );
       throw error;
     }
+  }
+
+  private async handleImageProcessingFailed(
+    event: ImageProcessingFailed,
+  ): Promise<void> {
+    const task = await this.taskRepo.findById(event.taskId);
+
+    if (!task) {
+      this.logger.error(`Task ${event.taskId} not found for failure handling`);
+      return;
+    }
+
+    task.fail();
+    this.logger.warn(
+      `Marking task ${event.taskId} as failed due to error: ${event.error}`,
+    );
+    await this.taskRepo.save(task);
   }
 }
