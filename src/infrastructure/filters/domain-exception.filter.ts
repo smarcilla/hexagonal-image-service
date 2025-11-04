@@ -25,15 +25,15 @@ export class DomainExceptionFilter implements ExceptionFilter {
     switch (type) {
       case InvalidImageSourceError.name:
         return response.status(HttpStatus.BAD_REQUEST).json({
+          message: [exception.message],
+          error: exception.constructor.name,
           statusCode: HttpStatus.BAD_REQUEST,
-          error: exception.message,
-          type: exception.constructor.name,
         });
       case TaskNotFoundError.name:
         return response.status(HttpStatus.NOT_FOUND).json({
+          message: [exception.message],
+          error: exception.constructor.name,
           statusCode: HttpStatus.NOT_FOUND,
-          error: exception.message,
-          type: exception.constructor.name,
         });
       default:
         return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
