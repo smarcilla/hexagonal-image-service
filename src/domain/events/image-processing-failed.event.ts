@@ -1,7 +1,7 @@
 import { DomainEvent } from './domain-event';
 
 export class ImageProcessingFailed implements DomainEvent {
-  readonly type: 'ImageProcessingFailed';
+  readonly type = 'ImageProcessingFailed';
   readonly occurredAt: Date;
 
   constructor(

@@ -3,8 +3,18 @@ import { ImageSource } from '../value-objects/image-source.value';
 import { Resolution } from '../value-objects/resolution.value';
 import { Md5Hash } from '../value-objects/md5hash.value';
 import { ImageVariant } from './image-variant.model';
+import { AddVariantError } from '../errors/add-variant.error';
+import { CompleteTaskError } from '../errors/complete-task.error';
+import { FailedTaskError } from '../errors/failed-task.error';
 
 describe('ImageProcessingTask (domain)', () => {
+  const createVariant = (hexChar: string) =>
+    ImageVariant.create(
+      Resolution.from('1024'),
+      Md5Hash.from(hexChar.repeat(32)),
+      ImageSource.from(`file-${hexChar}.png`),
+    );
+
   it('creates a task with a random price between 5 and 50', () => {
     const task = ImageProcessingTask.create('t1', ImageSource.from('file.jpg'));
     expect(typeof task.price.amount).toBe('number');
@@ -44,5 +54,38 @@ describe('ImageProcessingTask (domain)', () => {
     );
     task.addVariant(v);
     expect(() => task.complete()).toThrow();
+  });
+
+  it('does not allow adding variants when the task is not pending', () => {
+    const task = ImageProcessingTask.create(
+      't4',
+      ImageSource.from('file.jpg'),
+      undefined,
+      'completed',
+    );
+
+    expect(() => task.addVariant(createVariant('a'))).toThrow(AddVariantError);
+  });
+
+  it('marks the task as failed and prevents further state changes', () => {
+    const task = ImageProcessingTask.create('t5', ImageSource.from('file.jpg'));
+
+    task.fail();
+
+    expect(task.status).toBe('failed');
+    expect(() => task.fail()).toThrow(FailedTaskError);
+    expect(() => task.complete()).toThrow(CompleteTaskError);
+  });
+
+  it('exposes variants through a defensive copy', () => {
+    const task = ImageProcessingTask.create('t6', ImageSource.from('file.jpg'));
+    const variant = createVariant('b');
+
+    task.addVariant(variant);
+
+    const returned = task.variants as ImageVariant[];
+    returned.pop();
+
+    expect(task.variants).toHaveLength(1);
   });
 });
