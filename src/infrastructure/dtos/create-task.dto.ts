@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
 /**
  * Request DTO for creating an image processing task
@@ -12,6 +12,7 @@ export class CreateTaskRequestDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/, { message: 'source should not be empty or blank' })
   source: string;
 }
 
