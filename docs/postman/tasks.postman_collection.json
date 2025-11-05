@@ -1,0 +1,277 @@
+{
+  "info": {
+    "_postman_id": "a808db52-a299-4319-8b3a-3248d55bffda",
+    "name": "Hexagonal Image Service - Tasks",
+    "description": "Collection to test /tasks endpoint (create and query). Use {{baseUrl}} env variable (default http://localhost:3000).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "743919"
+  },
+  "item": [
+    {
+      "name": "Create Task - valid url image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Expect a successful creation (200 or 201) and an id in the response body",
+              "pm.test('status is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+              "});",
+              "var json = {};",
+              "try { json = pm.response.json(); } catch (e) { json = {}; }",
+              "pm.test('response has taskId', function () {",
+              "    pm.expect(json).to.have.property('taskId');",
+              "    pm.collectionVariables.set('taskId', json.taskId);",
+              "});",
+              "// Helpful info",
+              "console.log('Created task id:', pm.collectionVariables.get('taskId'))"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"https://png.pngtree.com/png-clipart/20220404/original/pngtree-cute-cartoon-beach-bear-illustration-png-image_7506687.png\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/tasks",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Task - valid local path image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Expect a successful creation (200 or 201) and an id in the response body",
+              "pm.test('status is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+              "});",
+              "var json = {};",
+              "try { json = pm.response.json(); } catch (e) { json = {}; }",
+              "pm.test('response has taskId', function () {",
+              "    pm.expect(json).to.have.property('taskId');",
+              "    pm.collectionVariables.set('taskId', json.taskId);",
+              "});",
+              "// Helpful info",
+              "console.log('Created task id:', pm.collectionVariables.get('taskId'))"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"images/input/teddy-bear-sunbathing-beach-600nw-116563561.webp\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/tasks",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Task - invalid (empty source)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// For invalid input we expect an error status (4xx or 5xx). Exact code may vary depending on validation/exception mapping",
+              "pm.test('error status code', function () {",
+              "    pm.expect(pm.response.code).to.be.at.least(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/tasks",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Task by id",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Ensure we have a taskId from the previous request",
+              "if (!pm.collectionVariables.get('taskId')) {",
+              "    console.warn('No taskId set in collection variables. Make sure to run Create Task - valid first.');",
+              "}",
+              "",
+              "// noop"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// The processing is asynchronous. Immediately after creation task is expected to be 'pending' and have 0 variants.",
+              "// Later it may transition to 'completed' with exactly 2 variants. Accept either state here.",
+              "var json = {};",
+              "try { json = pm.response.json(); } catch (e) { json = {}; }",
+              "pm.test('response code is 200', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+              "});",
+              "pm.test('has id or found:false', function () {",
+              "    pm.expect(json).to.be.an('object');",
+              "});",
+              "pm.test('status is pending or completed', function () {",
+              "    if (json.found === false) {",
+              "        pm.expect(json.found).to.equal(false);",
+              "    } else {",
+              "        pm.expect(['pending','completed','failed']).to.include(json.status);",
+              "    }",
+              "});",
+              "pm.test('variants either 0 (pending) or 2 (completed)', function () {",
+              "    if (json.found === false) {",
+              "        pm.expect(json.found).to.equal(false);",
+              "    } else {",
+              "        pm.expect(json.variants).to.be.an('array');",
+              "        pm.expect([0,2]).to.include(json.variants.length);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/tasks/{{taskId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "{{taskId}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Task by id Not Found",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Ensure we have a taskId from the previous request",
+              "if (!pm.collectionVariables.get('taskId')) {",
+              "    console.warn('No taskId set in collection variables. Make sure to run Create Task - valid first.');",
+              "}",
+              "",
+              "// noop"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// The processing is asynchronous. Immediately after creation task is expected to be 'pending' and have 0 variants.",
+              "// Later it may transition to 'completed' with exactly 2 variants. Accept either state here.",
+              "var json = {};",
+              "try { json = pm.response.json(); } catch (e) { json = {}; }",
+              "pm.test('response code is 200', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200,201]);",
+              "});",
+              "pm.test('has id or found:false', function () {",
+              "    pm.expect(json).to.be.an('object');",
+              "});",
+              "pm.test('status is pending or completed', function () {",
+              "    if (json.found === false) {",
+              "        pm.expect(json.found).to.equal(false);",
+              "    } else {",
+              "        pm.expect(['pending','completed','failed']).to.include(json.status);",
+              "    }",
+              "});",
+              "pm.test('variants either 0 (pending) or 2 (completed)', function () {",
+              "    if (json.found === false) {",
+              "        pm.expect(json.found).to.equal(false);",
+              "    } else {",
+              "        pm.expect(json.variants).to.be.an('array');",
+              "        pm.expect([0,2]).to.include(json.variants.length);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/tasks/notfound",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "notfound"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "taskId",
+      "value": ""
+    }
+  ]
+}

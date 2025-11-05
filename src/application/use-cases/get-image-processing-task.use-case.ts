@@ -9,9 +9,13 @@ export class GetImageProcessingTask {
     const task = await this.taskRepository.findById(taskId);
 
     return {
+      taskId: task.id,
       status: task.status,
       price: task.price.amount,
-      paths: task.variants.map((variant) => variant.path.uri),
+      images: task.variants.map((variant) => ({
+        resolution: variant.resolution.width,
+        path: variant.path.uri,
+      })),
     };
   }
 }
